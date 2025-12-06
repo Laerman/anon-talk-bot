@@ -218,7 +218,7 @@ export default function AdminPanel() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="https://poehali-user-files.storage.yandexcloud.net/Фон/video.mp4" type="video/mp4" />
+          <source src="https://cdn.poehali.dev/projects/7e0de1b9-4cfa-4b7c-808d-bcd017271665/bucket/Dantalian no Shoka-01[BDRip][1080P][x264_flac][05A7DEEA] (1) (1).mkv" type="video/x-matroska" />
         </video>
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
         <div className="relative z-10">
