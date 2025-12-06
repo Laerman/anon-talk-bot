@@ -210,20 +210,8 @@ export default function AdminPanel() {
 
   if (!isAuthenticated) {
     return (
-      <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/video/background.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-        <div className="relative z-10">
-          <LoginForm onSuccess={handleLoginSuccess} />
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoginForm onSuccess={handleLoginSuccess} />
       </div>
     );
   }
