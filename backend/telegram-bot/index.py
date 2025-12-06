@@ -15,6 +15,7 @@ BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 VK_GROUP_TOKEN = os.environ.get('VK_GROUP_TOKEN', '')
 VK_API_VERSION = '5.131'
+S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'poehali-user-files')
 
 def send_vk_message(user_id: int, text: str, keyboard: Optional[Dict] = None) -> bool:
     """Send message to VK user"""
@@ -112,6 +113,61 @@ def get_file_url(file_id: str) -> Optional[str]:
                 return f'https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}'
         return None
     except:
+        return None
+
+def upload_file_to_s3(file_id: str, content_type: str) -> Optional[Dict[str, Any]]:
+    """Upload file from Telegram to S3 storage"""
+    try:
+        import boto3
+        import uuid
+        from botocore.exceptions import ClientError
+        
+        telegram_file_url = get_file_url(file_id)
+        if not telegram_file_url:
+            return None
+        
+        response = requests.get(telegram_file_url, timeout=30)
+        if response.status_code != 200:
+            return None
+        
+        file_content = response.content
+        
+        extensions = {
+            'photo': '.jpg',
+            'video': '.mp4',
+            'voice': '.ogg',
+            'video_note': '.mp4',
+            'sticker': '.webp'
+        }
+        file_extension = extensions.get(content_type, '.bin')
+        file_name = f"attachments/{uuid.uuid4()}{file_extension}"
+        
+        s3_client = boto3.client('s3')
+        
+        mime_types = {
+            'photo': 'image/jpeg',
+            'video': 'video/mp4',
+            'voice': 'audio/ogg',
+            'video_note': 'video/mp4',
+            'sticker': 'image/webp'
+        }
+        
+        s3_client.put_object(
+            Bucket=S3_BUCKET_NAME,
+            Key=file_name,
+            Body=file_content,
+            ContentType=mime_types.get(content_type, 'application/octet-stream')
+        )
+        
+        s3_url = f"https://{S3_BUCKET_NAME}.storage.yandexcloud.net/{file_name}"
+        
+        return {
+            'url': s3_url,
+            'size': len(file_content),
+            'mime_type': mime_types.get(content_type)
+        }
+        
+    except (ClientError, Exception):
         return None
 
 def get_db_connection():
@@ -472,10 +528,18 @@ def handle_photo(chat_id: int, photo_id: str, caption: Optional[str] = None):
         
         cursor.execute(f"UPDATE chats SET message_count = message_count + 1 WHERE id = {user['current_chat_id']}")
         
-        photo_url = get_file_url(photo_id)
-        photo_url_sql = escape_sql(photo_url)
+        uploaded = upload_file_to_s3(photo_id, 'photo')
+        if uploaded:
+            photo_url_sql = escape_sql(uploaded['url'])
+            file_size = uploaded.get('size', 0)
+            mime_type_sql = escape_sql(uploaded.get('mime_type'))
+        else:
+            photo_url_sql = escape_sql(get_file_url(photo_id))
+            file_size = 0
+            mime_type_sql = 'NULL'
+        
         caption_sql = escape_sql(caption) if caption else 'NULL'
-        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, photo_url, text_content) VALUES ({user['current_chat_id']}, {chat_id}, 'photo', {photo_url_sql}, {caption_sql})")
+        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, photo_url, text_content, file_size, mime_type) VALUES ({user['current_chat_id']}, {chat_id}, 'photo', {photo_url_sql}, {caption_sql}, {file_size}, {mime_type_sql})")
         
         send_caption = None
         if caption:
@@ -508,10 +572,18 @@ def handle_video(chat_id: int, video_id: str, caption: Optional[str] = None):
         
         cursor.execute(f"UPDATE chats SET message_count = message_count + 1 WHERE id = {user['current_chat_id']}")
         
-        video_url = get_file_url(video_id)
-        video_url_sql = escape_sql(video_url)
+        uploaded = upload_file_to_s3(video_id, 'video')
+        if uploaded:
+            video_url_sql = escape_sql(uploaded['url'])
+            file_size = uploaded.get('size', 0)
+            mime_type_sql = escape_sql(uploaded.get('mime_type'))
+        else:
+            video_url_sql = escape_sql(get_file_url(video_id))
+            file_size = 0
+            mime_type_sql = 'NULL'
+        
         caption_sql = escape_sql(caption) if caption else 'NULL'
-        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, photo_url, text_content) VALUES ({user['current_chat_id']}, {chat_id}, 'video', {video_url_sql}, {caption_sql})")
+        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, video_url, text_content, file_size, mime_type) VALUES ({user['current_chat_id']}, {chat_id}, 'video', {video_url_sql}, {caption_sql}, {file_size}, {mime_type_sql})")
         
         send_caption = None
         if caption:
@@ -544,9 +616,17 @@ def handle_voice(chat_id: int, voice_id: str):
         
         cursor.execute(f"UPDATE chats SET message_count = message_count + 1 WHERE id = {user['current_chat_id']}")
         
-        voice_url = get_file_url(voice_id)
-        voice_url_sql = escape_sql(voice_url)
-        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, photo_url) VALUES ({user['current_chat_id']}, {chat_id}, 'voice', {voice_url_sql})")
+        uploaded = upload_file_to_s3(voice_id, 'voice')
+        if uploaded:
+            voice_url_sql = escape_sql(uploaded['url'])
+            file_size = uploaded.get('size', 0)
+            mime_type_sql = escape_sql(uploaded.get('mime_type'))
+        else:
+            voice_url_sql = escape_sql(get_file_url(voice_id))
+            file_size = 0
+            mime_type_sql = 'NULL'
+        
+        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, voice_url, file_size, mime_type) VALUES ({user['current_chat_id']}, {chat_id}, 'voice', {voice_url_sql}, {file_size}, {mime_type_sql})")
         
         send_voice(partner_id, voice_id)
     
@@ -574,6 +654,18 @@ def handle_sticker(chat_id: int, sticker_id: str):
         
         cursor.execute(f"UPDATE chats SET message_count = message_count + 1 WHERE id = {user['current_chat_id']}")
         
+        uploaded = upload_file_to_s3(sticker_id, 'sticker')
+        if uploaded:
+            sticker_url_sql = escape_sql(uploaded['url'])
+            file_size = uploaded.get('size', 0)
+            mime_type_sql = escape_sql(uploaded.get('mime_type'))
+        else:
+            sticker_url_sql = escape_sql(get_file_url(sticker_id))
+            file_size = 0
+            mime_type_sql = 'NULL'
+        
+        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, sticker_url, file_size, mime_type) VALUES ({user['current_chat_id']}, {chat_id}, 'sticker', {sticker_url_sql}, {file_size}, {mime_type_sql})")
+        
         send_sticker(partner_id, sticker_id)
     
     cursor.close()
@@ -600,9 +692,17 @@ def handle_video_note(chat_id: int, video_note_id: str):
         
         cursor.execute(f"UPDATE chats SET message_count = message_count + 1 WHERE id = {user['current_chat_id']}")
         
-        video_note_url = get_file_url(video_note_id)
-        video_note_url_sql = escape_sql(video_note_url)
-        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, photo_url) VALUES ({user['current_chat_id']}, {chat_id}, 'video_note', {video_note_url_sql})")
+        uploaded = upload_file_to_s3(video_note_id, 'video_note')
+        if uploaded:
+            video_note_url_sql = escape_sql(uploaded['url'])
+            file_size = uploaded.get('size', 0)
+            mime_type_sql = escape_sql(uploaded.get('mime_type'))
+        else:
+            video_note_url_sql = escape_sql(get_file_url(video_note_id))
+            file_size = 0
+            mime_type_sql = 'NULL'
+        
+        cursor.execute(f"INSERT INTO t_p14838969_anon_talk_bot.messages (chat_id, sender_telegram_id, content_type, video_note_url, file_size, mime_type) VALUES ({user['current_chat_id']}, {chat_id}, 'video_note', {video_note_url_sql}, {file_size}, {mime_type_sql})")
         
         send_video_note(partner_id, video_note_id)
     
