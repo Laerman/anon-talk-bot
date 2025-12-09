@@ -211,15 +211,11 @@ export default function AdminPanel() {
   if (!isAuthenticated) {
     return (
       <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
+        <img
+          src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba"
+          alt="Cat background"
           className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="https://cdn.poehali.dev/projects/7e0de1b9-4cfa-4b7c-808d-bcd017271665/bucket/Dantalian no Shoka-01[BDRip][1080P][x264_flac][05A7DEEA] (1) (1).mkv" type="video/x-matroska" />
-        </video>
+        />
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
         <div className="relative z-10">
           <LoginForm onSuccess={handleLoginSuccess} />
