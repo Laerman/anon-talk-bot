@@ -1,4 +1,6 @@
 {
+  "yookassa-yookassa": "https://functions.poehali.dev/8c8dd74a-fccf-419a-a610-33d7149f2173",
+  "yookassa-yookassa-webhook": "https://functions.poehali.dev/0c5279bc-8f4f-428b-959b-c47c27062441",
   "vk-bot": "https://functions.poehali.dev/7628ebab-a5a6-4d82-9719-11d1370d8854",
   "unisender-go-unisender": "https://functions.poehali.dev/d80779ed-ebd5-4d70-a58e-f229bb09a18d",
   "cleanup-attachments": "https://functions.poehali.dev/44deba1f-2392-4866-9015-8df267216a6c",
