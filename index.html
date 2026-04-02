@@ -24,7 +24,14 @@
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS COMMENT! -->
 
     <meta name="pp-name" value="anon-talk-bot">
-    <meta name="robots" content="noindex, nofollow">
+    <script>
+      if (window.location.hostname.includes('--preview.poehali.dev')) {
+        var meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex, nofollow';
+        document.head.appendChild(meta);
+      }
+    </script>
       <script src="https://cdn.poehali.dev/intertnal/js/inspector-min.js"></script>
   </head>
 
