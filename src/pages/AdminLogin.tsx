@@ -260,7 +260,7 @@ export default function AdminLogin() {
               <GenderDistribution genderData={genderData} />
             </div>
 
-            <StatsMetrics stats={stats} />
+            <StatsMetrics stats={stats} formatDuration={formatDuration} />
           </TabsContent>
 
           <TabsContent value="chats" className="space-y-6">
@@ -272,13 +272,13 @@ export default function AdminLogin() {
           </TabsContent>
 
           <TabsContent value="complaints" className="space-y-6">
-            <ComplaintsList complaints={complaints} />
+            <ComplaintsList complaints={complaints} onAction={handleRefresh} />
           </TabsContent>
 
           <TabsContent value="attachments" className="space-y-6">
             <AttachmentsList 
               attachments={attachments} 
-              formatGender={formatGender} 
+              onCleanupComplete={handleRefresh} 
             />
           </TabsContent>
         </Tabs>
