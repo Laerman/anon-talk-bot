@@ -44,8 +44,15 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-fixed"
+      style={{
+        backgroundImage:
+          "url('https://cdn.poehali.dev/projects/7e0de1b9-4cfa-4b7c-808d-bcd017271665/bucket/e3ae8580-4c2f-4936-aadf-b349e6ecb286.jpg')",
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40" />
+      <Card className="relative w-full max-w-lg bg-white/90 backdrop-blur-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Icon name="Mail" size={22} />
