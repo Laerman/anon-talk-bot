@@ -24,6 +24,3 @@ dist-ssr
 *.sw?
 builds
 .tmp
-
-# warmup/handoff артефакты
-tmp/

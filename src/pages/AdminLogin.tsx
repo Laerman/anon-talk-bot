@@ -39,7 +39,6 @@ interface Chat {
 interface Complaint {
   id: number;
   chat_id: number;
-  reported_user_id: number | null;
   reason: string;
   created_at: string;
   status: string;
