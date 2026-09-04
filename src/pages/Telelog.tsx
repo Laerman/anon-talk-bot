@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import ResultsView, { GroupRow } from '@/components/telelog/ResultsView';
+import { exportExcel } from '@/components/telelog/exportExcel';
 
 const API_URL = 'https://functions.poehali.dev/696c8844-0e83-447d-87b4-7323c0136e7a';
 
@@ -38,6 +39,7 @@ export default function Telelog() {
   const [showToken, setShowToken] = useState(false);
   const [users, setUsers] = useState('');
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [rows, setRows] = useState<GroupRow[]>([]);
   const [checkedUsers, setCheckedUsers] = useState<{ id: number; label: string }[]>([]);
@@ -145,42 +147,10 @@ export default function Telelog() {
     setLoading(false);
   };
 
-  const downloadCsv = () => {
-    const head = [
-      'user_id',
-      'user_label',
-      'group_id',
-      'title',
-      'username',
-      'is_private',
-      'messages_count',
-      'first_message',
-      'last_message',
-    ];
-    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = [
-      head.join(','),
-      ...rows.map((r) =>
-        [
-          r.userId,
-          r.userLabel,
-          r.groupId,
-          r.title,
-          r.username,
-          r.isPrivate,
-          r.messagesCount,
-          r.firstMessage,
-          r.lastMessage,
-        ]
-          .map(esc)
-          .join(','),
-      ),
-    ].join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'groups.csv';
-    a.click();
+  const downloadExcel = async () => {
+    setExporting(true);
+    await exportExcel(rows, checkedUsers);
+    setExporting(false);
   };
 
   return (
@@ -239,9 +209,17 @@ export default function Telelog() {
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={downloadCsv} disabled={!rows.length}>
-                <Icon name="Download" size={16} className="mr-2" />
-                Скачать CSV
+              <Button
+                variant="outline"
+                onClick={downloadExcel}
+                disabled={!rows.length || exporting}
+              >
+                <Icon
+                  name={exporting ? 'Loader2' : 'FileSpreadsheet'}
+                  size={16}
+                  className={exporting ? 'mr-2 animate-spin' : 'mr-2'}
+                />
+                Скачать Excel
               </Button>
               {balance !== null && (
                 <span className="text-sm text-muted-foreground">Баланс: {balance}</span>
