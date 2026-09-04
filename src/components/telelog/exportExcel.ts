@@ -15,6 +15,73 @@ const groupLink = (r: GroupRow) => {
   return '—';
 };
 
+function buildOverlapSheet(wb: ExcelJS.Workbook, rows: GroupRow[]) {
+  const map = new Map<string, { title: string; users: Map<string, GroupRow> }>();
+  rows.forEach((r) => {
+    const key = String(r.groupId ?? r.title ?? '');
+    if (!key) return;
+    if (!map.has(key)) map.set(key, { title: r.title || 'Без названия', users: new Map() });
+    map.get(key)!.users.set(r.userLabel, r);
+  });
+
+  const overlaps = Array.from(map.values())
+    .filter((g) => g.users.size > 1)
+    .sort((a, b) => b.users.size - a.users.size || a.title.localeCompare(b.title));
+
+  const ws = wb.addWorksheet('Пересечения');
+  ws.columns = [
+    { header: 'Название канала/группы', key: 'title', width: 46 },
+    { header: 'Юзеров', key: 'count', width: 10 },
+    { header: 'Юзеры', key: 'users', width: 60 },
+  ];
+
+  const head = ws.getRow(1);
+  head.height = 34;
+  head.eachCell((cell) => {
+    cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HEADER_BG } };
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    cell.border = allBorders;
+  });
+
+  if (!overlaps.length) {
+    const row = ws.getRow(2);
+    row.getCell(1).value = 'Пересечений не найдено';
+    row.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+    row.eachCell({ includeEmpty: true }, (cell, col) => {
+      if (col > 3) return;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BAND_A } };
+      cell.border = allBorders;
+    });
+    ws.views = [{ state: 'frozen', ySplit: 1 }];
+    return;
+  }
+
+  overlaps.forEach((g, i) => {
+    const row = ws.getRow(i + 2);
+    row.height = 22;
+    row.getCell(1).value = g.title;
+    row.getCell(2).value = g.users.size;
+    row.getCell(3).value = Array.from(g.users.keys()).join(', ');
+
+    const bg = i % 2 === 0 ? BAND_A : BAND_B;
+    row.eachCell({ includeEmpty: true }, (cell, col) => {
+      if (col > 3) return;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+      cell.border = allBorders;
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: col === 2 ? 'center' : 'left',
+        wrapText: col === 3,
+      };
+      if (col === 2) cell.font = { bold: true };
+    });
+  });
+
+  ws.views = [{ state: 'frozen', ySplit: 1 }];
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 3 } };
+}
+
 export async function exportExcel(rows: GroupRow[], userLabels: { id: number; label: string }[]) {
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Группы');
@@ -86,6 +153,8 @@ export async function exportExcel(rows: GroupRow[], userLabels: { id: number; la
 
   ws.views = [{ state: 'frozen', ySplit: 1 }];
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 5 } };
+
+  buildOverlapSheet(wb, rows);
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], {
