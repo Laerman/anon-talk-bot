@@ -7,8 +7,12 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import ResultsView, { GroupRow } from '@/components/telelog/ResultsView';
 import { exportExcel } from '@/components/telelog/exportExcel';
+import { createRateLimiter, runPool, sleep } from '@/components/telelog/rateLimit';
 
 const API_URL = 'https://functions.poehali.dev/696c8844-0e83-447d-87b4-7323c0136e7a';
+const RPS = 15;
+const CONCURRENCY = 8;
+const RESOLVE_CHUNK = 50;
 
 interface LogLine {
   text: string;
@@ -58,6 +62,26 @@ export default function Telelog() {
     return res.json();
   };
 
+  const callLimited = async (
+    payload: Record<string, unknown>,
+    take: () => Promise<void>,
+    attempt = 0,
+  ): Promise<any> => {
+    await take();
+    let r: any;
+    try {
+      r = await call(payload);
+    } catch (e) {
+      r = { success: false, status: 0, data: { error: String(e) } };
+    }
+    const retriable = r?.status === 429 || r?.status === 503 || r?.status === 0;
+    if (retriable && attempt < 4) {
+      await sleep(1000 * Math.pow(2, attempt));
+      return callLimited(payload, take, attempt + 1);
+    }
+    return r;
+  };
+
   const run = async () => {
     const tokens = parseTokens(users);
     if (!token.trim()) return addLog('Введите токен', 'error');
@@ -74,15 +98,23 @@ export default function Telelog() {
 
     const resolved: Record<string, { id: number; username: string }> = {};
     if (names.length) {
-      addLog(`Определяю ID для ${names.length} username...`);
-      const r = await call({ action: 'resolve', names });
-      if (!r.success) {
-        addLog(`Ошибка резолва (HTTP ${r.status}): ${JSON.stringify(r.data)}`, 'error');
-      } else {
-        (r.data?.data || []).forEach((u: { id: number; username: string }) => {
-          if (u.username) resolved[u.username.toLowerCase()] = u;
-        });
-      }
+      const takeResolve = createRateLimiter(RPS);
+      const chunks: string[][] = [];
+      for (let i = 0; i < names.length; i += RESOLVE_CHUNK)
+        chunks.push(names.slice(i, i + RESOLVE_CHUNK));
+
+      addLog(`Определяю ID для ${names.length} username (${chunks.length} пачек)...`);
+
+      await runPool(chunks, CONCURRENCY, async (chunk) => {
+        const r = await callLimited({ action: 'resolve', names: chunk }, takeResolve);
+        if (!r.success) {
+          addLog(`Ошибка резолва (HTTP ${r.status}): ${JSON.stringify(r.data)}`, 'error');
+        } else {
+          (r.data?.data || []).forEach((u: { id: number; username: string }) => {
+            if (u.username) resolved[u.username.toLowerCase()] = u;
+          });
+        }
+      });
     }
 
     tokens.forEach((t) => {
@@ -104,10 +136,13 @@ export default function Telelog() {
 
     setProgress({ done: 0, total: targets.length });
     const collected: GroupRow[] = [];
+    const take = createRateLimiter(RPS);
+    let done = 0;
 
-    for (let i = 0; i < targets.length; i++) {
-      const tgt = targets[i];
-      const r = await call({ action: 'groups', userId: String(tgt.id) });
+    addLog(`Проверяю ${targets.length} юзеров — до ${RPS} запросов в секунду`);
+
+    await runPool(targets, CONCURRENCY, async (tgt) => {
+      const r = await callLimited({ action: 'groups', userId: String(tgt.id) }, take);
 
       if (!r.success) {
         const msg =
@@ -140,8 +175,9 @@ export default function Telelog() {
         });
         setRows([...collected]);
       }
-      setProgress({ done: i + 1, total: targets.length });
-    }
+      done++;
+      setProgress({ done, total: targets.length });
+    });
 
     addLog(`Готово: ${collected.length} строк`, 'ok');
     setLoading(false);

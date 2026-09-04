@@ -1,4 +1,5 @@
 import json
+import time
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -13,22 +14,27 @@ CORS = {
 }
 
 
-def api_get(url: str, token: str, timeout: int = 25):
+def api_get(url: str, token: str, timeout: int = 25, retries: int = 2):
     req = urllib.request.Request(url, headers={
         'Authorization': f'Bearer {token}',
         'Accept': 'application/json',
         'User-Agent': 'telelog-web/1.0',
     })
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, json.loads(resp.read().decode('utf-8'))
-    except urllib.error.HTTPError as e:
-        raw = e.read().decode('utf-8', 'replace')
+    for attempt in range(retries + 1):
         try:
-            parsed = json.loads(raw)
-        except Exception:
-            parsed = {'raw': raw[:500]}
-        return e.code, parsed
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.status, json.loads(resp.read().decode('utf-8'))
+        except urllib.error.HTTPError as e:
+            raw = e.read().decode('utf-8', 'replace')
+            try:
+                parsed = json.loads(raw)
+            except Exception:
+                parsed = {'raw': raw[:500]}
+            if e.code == 429 and attempt < retries:
+                time.sleep(0.6 * (attempt + 1))
+                continue
+            return e.code, parsed
+    return 429, {'error': 'rate limit'}
 
 
 def handler(event: dict, context) -> dict:
