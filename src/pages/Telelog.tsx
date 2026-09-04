@@ -11,8 +11,9 @@ import { createRateLimiter, runPool, sleep } from '@/components/telelog/rateLimi
 
 const API_URL = 'https://functions.poehali.dev/696c8844-0e83-447d-87b4-7323c0136e7a';
 const RPS = 15;
-const CONCURRENCY = 8;
-const RESOLVE_CHUNK = 50;
+const CONCURRENCY = 6;
+const RESOLVE_CHUNK = 25;
+const MAX_RETRIES = 5;
 
 interface LogLine {
   text: string;
@@ -74,9 +75,9 @@ export default function Telelog() {
     } catch (e) {
       r = { success: false, status: 0, data: { error: String(e) } };
     }
-    const retriable = r?.status === 429 || r?.status === 503 || r?.status === 0;
-    if (retriable && attempt < 4) {
-      await sleep(1000 * Math.pow(2, attempt));
+    const retriable = [0, 429, 502, 503, 504].includes(r?.status);
+    if (retriable && attempt < MAX_RETRIES) {
+      await sleep(700 * Math.pow(2, attempt) + Math.random() * 300);
       return callLimited(payload, take, attempt + 1);
     }
     return r;
@@ -150,7 +151,9 @@ export default function Telelog() {
             ? 'неверный или истёкший токен'
             : r.status === 402
               ? 'недостаточно баланса'
-              : JSON.stringify(r.data).slice(0, 200);
+              : r.status === 504
+                ? 'сервис не ответил вовремя'
+                : JSON.stringify(r.data).slice(0, 200);
         addLog(`${tgt.label}: ошибка (HTTP ${r.status}) — ${msg}`, 'error');
       } else {
         const body = r.data || {};

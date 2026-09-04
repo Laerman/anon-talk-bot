@@ -14,27 +14,30 @@ CORS = {
 }
 
 
-def api_get(url: str, token: str, timeout: int = 25, retries: int = 2):
+UPSTREAM_TIMEOUT = 2.3
+
+
+def api_get(url: str, token: str):
+    """Один запрос к upstream. Без внутренних повторов — таймаут функции 3 сек."""
     req = urllib.request.Request(url, headers={
         'Authorization': f'Bearer {token}',
         'Accept': 'application/json',
         'User-Agent': 'telelog-web/1.0',
     })
-    for attempt in range(retries + 1):
+    started = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=UPSTREAM_TIMEOUT) as resp:
+            return resp.status, json.loads(resp.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode('utf-8', 'replace')
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return resp.status, json.loads(resp.read().decode('utf-8'))
-        except urllib.error.HTTPError as e:
-            raw = e.read().decode('utf-8', 'replace')
-            try:
-                parsed = json.loads(raw)
-            except Exception:
-                parsed = {'raw': raw[:500]}
-            if e.code == 429 and attempt < retries:
-                time.sleep(0.6 * (attempt + 1))
-                continue
-            return e.code, parsed
-    return 429, {'error': 'rate limit'}
+            parsed = json.loads(raw)
+        except Exception:
+            parsed = {'raw': raw[:500]}
+        return e.code, parsed
+    except Exception as e:
+        return 504, {'error': 'upstream timeout', 'detail': str(e)[:200],
+                     'elapsed': round(time.time() - started, 2)}
 
 
 def handler(event: dict, context) -> dict:
