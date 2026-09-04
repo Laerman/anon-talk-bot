@@ -8,17 +8,13 @@ import Icon from '@/components/ui/icon';
 import ResultsView, { GroupRow } from '@/components/telelog/ResultsView';
 import { exportExcel } from '@/components/telelog/exportExcel';
 import { createRateLimiter, runPool, sleep } from '@/components/telelog/rateLimit';
+import LogPanels, { LogLine } from '@/components/telelog/LogPanels';
 
 const API_URL = 'https://functions.poehali.dev/696c8844-0e83-447d-87b4-7323c0136e7a';
 const RPS = 15;
 const CONCURRENCY = 6;
 const RESOLVE_CHUNK = 25;
 const MAX_RETRIES = 5;
-
-interface LogLine {
-  text: string;
-  type: 'info' | 'error' | 'ok';
-}
 
 const parseTokens = (text: string) => {
   const out: string[] = [];
@@ -267,31 +263,7 @@ export default function Telelog() {
           </CardContent>
         </Card>
 
-        {log.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Лог</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-56 overflow-auto space-y-1 font-mono text-xs">
-                {log.map((l, i) => (
-                  <div
-                    key={i}
-                    className={
-                      l.type === 'error'
-                        ? 'text-red-600'
-                        : l.type === 'ok'
-                          ? 'text-green-700'
-                          : 'text-slate-600'
-                    }
-                  >
-                    {l.text}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {log.length > 0 && <LogPanels log={log} />}
 
         {checkedUsers.length > 0 && <ResultsView rows={rows} userLabels={checkedUsers} />}
       </div>
