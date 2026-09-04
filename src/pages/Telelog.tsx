@@ -5,20 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
+import ResultsView, { GroupRow } from '@/components/telelog/ResultsView';
 
 const API_URL = 'https://functions.poehali.dev/696c8844-0e83-447d-87b4-7323c0136e7a';
-
-interface GroupRow {
-  userLabel: string;
-  userId: number;
-  groupId?: number;
-  title?: string;
-  username?: string;
-  isPrivate?: boolean;
-  messagesCount?: number;
-  firstMessage?: string;
-  lastMessage?: string;
-}
 
 interface LogLine {
   text: string;
@@ -51,6 +40,7 @@ export default function Telelog() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [rows, setRows] = useState<GroupRow[]>([]);
+  const [checkedUsers, setCheckedUsers] = useState<{ id: number; label: string }[]>([]);
   const [log, setLog] = useState<LogLine[]>([]);
   const [balance, setBalance] = useState<number | null>(null);
 
@@ -73,6 +63,7 @@ export default function Telelog() {
 
     setLoading(true);
     setRows([]);
+    setCheckedUsers([]);
     setLog([]);
     setBalance(null);
 
@@ -130,6 +121,7 @@ export default function Telelog() {
         const bal = body.tech?.current_ballance;
         if (bal !== undefined && bal !== null) setBalance(bal);
         addLog(`${tgt.label} (id=${tgt.id}) — групп: ${groups.length}`, 'ok');
+        setCheckedUsers((prev) => [...prev, { id: tgt.id, label: tgt.label }]);
         groups.forEach((g: Record<string, any>) => {
           const chat = g.chat || {};
           collected.push({
@@ -284,43 +276,7 @@ export default function Telelog() {
           </Card>
         )}
 
-        {rows.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Результат — {rows.length} строк</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-auto max-h-[500px]">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-100 sticky top-0">
-                    <tr className="text-left">
-                      <th className="p-2 font-medium">Юзер</th>
-                      <th className="p-2 font-medium">Группа</th>
-                      <th className="p-2 font-medium">@</th>
-                      <th className="p-2 font-medium">Сообщений</th>
-                      <th className="p-2 font-medium">Последнее</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r, i) => (
-                      <tr key={i} className="border-t">
-                        <td className="p-2 whitespace-nowrap">{r.userLabel}</td>
-                        <td className="p-2">{r.title}</td>
-                        <td className="p-2 text-muted-foreground">
-                          {r.username ? '@' + r.username : r.isPrivate ? 'приватная' : '—'}
-                        </td>
-                        <td className="p-2">{r.messagesCount ?? '—'}</td>
-                        <td className="p-2 text-muted-foreground whitespace-nowrap">
-                          {r.lastMessage ? String(r.lastMessage).slice(0, 10) : '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {checkedUsers.length > 0 && <ResultsView rows={rows} userLabels={checkedUsers} />}
       </div>
     </div>
   );
