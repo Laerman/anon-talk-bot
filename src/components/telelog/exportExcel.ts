@@ -16,12 +16,23 @@ const groupLink = (r: GroupRow) => {
 };
 
 function buildOverlapSheet(wb: ExcelJS.Workbook, rows: GroupRow[]) {
-  const map = new Map<string, { title: string; users: Map<string, GroupRow> }>();
+  const map = new Map<
+    string,
+    { title: string; username?: string; isPrivate?: boolean; users: Map<string, GroupRow> }
+  >();
   rows.forEach((r) => {
     const key = String(r.groupId ?? r.title ?? '');
     if (!key) return;
-    if (!map.has(key)) map.set(key, { title: r.title || 'Без названия', users: new Map() });
-    map.get(key)!.users.set(r.userLabel, r);
+    if (!map.has(key))
+      map.set(key, {
+        title: r.title || 'Без названия',
+        username: r.username,
+        isPrivate: r.isPrivate,
+        users: new Map(),
+      });
+    const g = map.get(key)!;
+    if (!g.username && r.username) g.username = r.username;
+    g.users.set(r.userLabel, r);
   });
 
   const overlaps = Array.from(map.values())
@@ -31,6 +42,7 @@ function buildOverlapSheet(wb: ExcelJS.Workbook, rows: GroupRow[]) {
   const ws = wb.addWorksheet('Пересечения');
   ws.columns = [
     { header: 'Название канала/группы', key: 'title', width: 46 },
+    { header: 'Ссылка', key: 'link', width: 30 },
     { header: 'Юзеров', key: 'count', width: 10 },
     { header: 'Юзеры', key: 'users', width: 60 },
   ];
@@ -49,7 +61,7 @@ function buildOverlapSheet(wb: ExcelJS.Workbook, rows: GroupRow[]) {
     row.getCell(1).value = 'Пересечений не найдено';
     row.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
     row.eachCell({ includeEmpty: true }, (cell, col) => {
-      if (col > 3) return;
+      if (col > 4) return;
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BAND_A } };
       cell.border = allBorders;
     });
@@ -61,25 +73,35 @@ function buildOverlapSheet(wb: ExcelJS.Workbook, rows: GroupRow[]) {
     const row = ws.getRow(i + 2);
     row.height = 22;
     row.getCell(1).value = g.title;
-    row.getCell(2).value = g.users.size;
-    row.getCell(3).value = Array.from(g.users.keys()).join(', ');
+    if (g.username) {
+      row.getCell(2).value = {
+        text: '@' + g.username,
+        hyperlink: `https://t.me/${g.username}`,
+      };
+    } else {
+      row.getCell(2).value = g.isPrivate ? 'приватная группа' : '—';
+    }
+    row.getCell(3).value = g.users.size;
+    row.getCell(4).value = Array.from(g.users.keys()).join(', ');
 
     const bg = i % 2 === 0 ? BAND_A : BAND_B;
     row.eachCell({ includeEmpty: true }, (cell, col) => {
-      if (col > 3) return;
+      if (col > 4) return;
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
       cell.border = allBorders;
       cell.alignment = {
         vertical: 'middle',
-        horizontal: col === 2 ? 'center' : 'left',
-        wrapText: col === 3,
+        horizontal: col === 3 ? 'center' : 'left',
+        wrapText: col === 4,
       };
-      if (col === 2) cell.font = { bold: true };
+      if (col === 3) cell.font = { bold: true };
+      if (col === 2 && g.username)
+        cell.font = { color: { argb: 'FF0563C1' }, underline: true };
     });
   });
 
   ws.views = [{ state: 'frozen', ySplit: 1 }];
-  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 3 } };
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 4 } };
 }
 
 export async function exportExcel(rows: GroupRow[], userLabels: { id: number; label: string }[]) {
@@ -127,7 +149,14 @@ export async function exportExcel(rows: GroupRow[], userLabels: { id: number; la
       const row = ws.getRow(rowIdx);
       row.height = 22;
       row.getCell(1).value = u.label;
-      row.getCell(2).value = g ? groupLink(g) : '';
+      if (g?.username) {
+        row.getCell(2).value = {
+          text: '@' + g.username,
+          hyperlink: `https://t.me/${g.username}`,
+        };
+      } else {
+        row.getCell(2).value = g ? groupLink(g) : '';
+      }
       row.getCell(3).value = g ? g.title || 'Без названия' : 'групп не найдено';
       row.getCell(4).value = g ? (g.messagesCount ?? '') : '';
       row.getCell(5).value = g?.lastMessage ? String(g.lastMessage).slice(0, 10) : '';
@@ -140,6 +169,8 @@ export async function exportExcel(rows: GroupRow[], userLabels: { id: number; la
           vertical: 'middle',
           horizontal: col === 1 || col === 4 || col === 5 ? 'center' : 'left',
         };
+        if (col === 2 && g?.username)
+          cell.font = { color: { argb: 'FF0563C1' }, underline: true };
       });
       rowIdx++;
     });

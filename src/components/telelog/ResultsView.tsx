@@ -193,7 +193,22 @@ export default function ResultsView({ rows, userLabels }: Props) {
                       {u.groups.map((g, i) => (
                         <div key={i} className="flex items-center gap-3 p-2.5 text-sm">
                           <div className="flex-1 min-w-0">
-                            <div className="truncate font-medium">{g.title || 'Без названия'}</div>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="truncate font-medium">
+                                {g.title || 'Без названия'}
+                              </span>
+                              {g.username && (
+                                <a
+                                  href={`https://t.me/${g.username}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title={`Открыть t.me/${g.username}`}
+                                  className="shrink-0 text-primary hover:opacity-70"
+                                >
+                                  <Icon name="ExternalLink" size={14} />
+                                </a>
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {g.username ? '@' + g.username : g.isPrivate ? 'приватная' : '—'}
                             </div>
@@ -219,6 +234,21 @@ export default function ResultsView({ rows, userLabels }: Props) {
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-2 text-left min-w-0">
                     <span className="font-medium truncate">{g.title}</span>
+                    {g.username && (
+                      <span
+                        role="link"
+                        tabIndex={0}
+                        title={`Открыть t.me/${g.username}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`https://t.me/${g.username}`, '_blank', 'noopener');
+                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="shrink-0 text-primary hover:opacity-70"
+                      >
+                        <Icon name="ExternalLink" size={14} />
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground shrink-0">
                       {g.username ? '@' + g.username : g.isPrivate ? 'приватная' : ''}
                     </span>
