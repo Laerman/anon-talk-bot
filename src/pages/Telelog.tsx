@@ -189,7 +189,7 @@ export default function Telelog() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-5xl mx-auto space-y-6">
         <Card>
           <CardHeader>

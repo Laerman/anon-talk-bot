@@ -23,7 +23,7 @@ export default function LogPanels({ log }: Props) {
       <Card>
         <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base flex items-center gap-2">
-            <Icon name="Activity" size={16} className="text-slate-500" />
+            <Icon name="Activity" size={16} className="text-muted-foreground" />
             Процесс
             <Badge variant="secondary">{process.length}</Badge>
           </CardTitle>
@@ -39,7 +39,10 @@ export default function LogPanels({ log }: Props) {
               <p className="text-muted-foreground">Пока пусто</p>
             ) : (
               process.map((l, i) => (
-                <div key={i} className={l.type === 'ok' ? 'text-green-700' : 'text-slate-600'}>
+                <div
+                  key={i}
+                  className={l.type === 'ok' ? 'text-green-400' : 'text-muted-foreground'}
+                >
                   {l.text}
                 </div>
               ))
@@ -48,7 +51,7 @@ export default function LogPanels({ log }: Props) {
         </CardContent>
       </Card>
 
-      <Card className={errors.length ? 'border-red-300' : undefined}>
+      <Card className={errors.length ? 'border-red-500/50' : undefined}>
         <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base flex items-center gap-2">
             <Icon
@@ -71,7 +74,7 @@ export default function LogPanels({ log }: Props) {
               <p className="text-muted-foreground">Ошибок нет</p>
             ) : (
               errors.map((l, i) => (
-                <div key={i} className="text-red-600">
+                <div key={i} className="text-red-400">
                   {l.text}
                 </div>
               ))

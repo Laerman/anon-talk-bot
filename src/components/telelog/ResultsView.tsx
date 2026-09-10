@@ -123,7 +123,7 @@ export default function ResultsView({ rows, userLabels }: Props) {
             {byUser.length} юзеров · {byGroup.length} уникальных групп
             {commonCount > 0 && ` · ${commonCount} пересечений`}
           </CardTitle>
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+          <div className="flex gap-1 bg-muted p-1 rounded-lg">
             <Button
               size="sm"
               variant={view === 'users' ? 'default' : 'ghost'}
