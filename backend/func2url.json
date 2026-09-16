@@ -1,8 +1,10 @@
 {
-  "upload-attachment": "https://functions.poehali.dev/ecfc1ad2-2219-4c26-b570-1f4bc47307ed",
-  "vk-bot": "https://functions.poehali.dev/71191bc4-d4ec-4905-ae83-0b73ffbf416c",
+  "telelog": "https://functions.poehali.dev/696c8844-0e83-447d-87b4-7323c0136e7a",
+  "send-mail": "https://functions.poehali.dev/f71776d7-d994-4934-8f67-9644c098be68",
+  "yookassa-yookassa": "https://functions.poehali.dev/8c8dd74a-fccf-419a-a610-33d7149f2173",
+  "yookassa-yookassa-webhook": "https://functions.poehali.dev/0c5279bc-8f4f-428b-959b-c47c27062441",
+  "vk-bot": "https://functions.poehali.dev/7628ebab-a5a6-4d82-9719-11d1370d8854",
+  "unisender-go-unisender": "https://functions.poehali.dev/d80779ed-ebd5-4d70-a58e-f229bb09a18d",
   "cleanup-attachments": "https://functions.poehali.dev/44deba1f-2392-4866-9015-8df267216a6c",
-  "admin-auth": "https://functions.poehali.dev/7c36ba9c-1436-4f94-ac57-6e4d16640f39",
-  "admin-api": "https://functions.poehali.dev/3d80763a-6e9c-47e8-ad39-f66f686907a6",
   "telegram-bot": "https://functions.poehali.dev/757a89cf-4d2d-4573-ba6a-6bfd8aa98d9c"
 }
