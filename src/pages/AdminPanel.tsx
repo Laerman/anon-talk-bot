@@ -272,7 +272,7 @@ export default function AdminPanel() {
               <GenderDistribution genderData={genderData} />
             </div>
 
-            <StatsMetrics stats={stats} formatDuration={formatDuration} />
+            <StatsMetrics stats={stats} />
           </TabsContent>
 
           <TabsContent value="chats">
@@ -284,13 +284,13 @@ export default function AdminPanel() {
           </TabsContent>
 
           <TabsContent value="complaints">
-            <ComplaintsList complaints={complaints} onAction={handleRefresh} />
+            <ComplaintsList complaints={complaints} />
           </TabsContent>
 
           <TabsContent value="attachments">
             <AttachmentsList 
               attachments={attachments}
-              onCleanupComplete={handleRefresh}
+              formatGender={formatGender}
             />
           </TabsContent>
         </Tabs>
