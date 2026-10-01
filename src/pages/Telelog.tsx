@@ -233,7 +233,7 @@ export default function Telelog() {
                 ) : (
                   <>
                     <Icon name="Play" size={16} className="mr-2" />
-                    шлем
+                    Проверить
                   </>
                 )}
               </Button>
