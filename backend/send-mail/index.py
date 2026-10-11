@@ -68,3 +68,4 @@ def handler(event: dict, context) -> dict:
         'body': json.dumps({'success': True, 'message': 'Письмо отправлено'}),
         'isBase64Encoded': False
     }
+

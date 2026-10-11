@@ -32,7 +32,7 @@ def send_vk_message(user_id: int, text: str, keyboard: Optional[Dict] = None) ->
     if keyboard:
         params['keyboard'] = json.dumps(keyboard)
     
-    response = requests.post(url, data=params)
+    response = requests.post(url, data=params, timeout=8)
     result = response.json()
     return 'response' in result
 
@@ -42,7 +42,7 @@ def send_message(chat_id: int, text: str, reply_markup: Optional[Dict] = None) -
     if reply_markup:
         data['reply_markup'] = json.dumps(reply_markup)
     
-    response = requests.post(url, json=data)
+    response = requests.post(url, json=data, timeout=8)
     return response.status_code == 200
 
 def send_cross_platform_message(user: Dict, text: str, keyboard: Optional[Dict] = None) -> bool:
@@ -66,7 +66,7 @@ def send_photo(chat_id: int, photo_id: str, caption: Optional[str] = None) -> bo
         data['caption'] = caption
         data['parse_mode'] = 'HTML'
     
-    response = requests.post(url, json=data)
+    response = requests.post(url, json=data, timeout=8)
     return response.status_code == 200
 
 def send_video(chat_id: int, video_id: str, caption: Optional[str] = None) -> bool:
@@ -76,7 +76,7 @@ def send_video(chat_id: int, video_id: str, caption: Optional[str] = None) -> bo
         data['caption'] = caption
         data['parse_mode'] = 'HTML'
     
-    response = requests.post(url, json=data)
+    response = requests.post(url, json=data, timeout=8)
     return response.status_code == 200
 
 def send_voice(chat_id: int, voice_id: str, caption: Optional[str] = None) -> bool:
@@ -86,27 +86,27 @@ def send_voice(chat_id: int, voice_id: str, caption: Optional[str] = None) -> bo
         data['caption'] = caption
         data['parse_mode'] = 'HTML'
     
-    response = requests.post(url, json=data)
+    response = requests.post(url, json=data, timeout=8)
     return response.status_code == 200
 
 def send_video_note(chat_id: int, video_note_id: str) -> bool:
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendVideoNote'
     data = {'chat_id': chat_id, 'video_note': video_note_id}
     
-    response = requests.post(url, json=data)
+    response = requests.post(url, json=data, timeout=8)
     return response.status_code == 200
 
 def send_sticker(chat_id: int, sticker_id: str) -> bool:
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendSticker'
     data = {'chat_id': chat_id, 'sticker': sticker_id}
     
-    response = requests.post(url, json=data)
+    response = requests.post(url, json=data, timeout=8)
     return response.status_code == 200
 
 def get_file_url(file_id: str) -> Optional[str]:
     try:
         url = f'https://api.telegram.org/bot{BOT_TOKEN}/getFile'
-        response = requests.post(url, json={'file_id': file_id})
+        response = requests.post(url, json={"file_id": file_id}, timeout=8)
         if response.status_code == 200:
             file_path = response.json().get('result', {}).get('file_path')
             if file_path:

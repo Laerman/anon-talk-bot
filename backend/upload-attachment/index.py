@@ -167,3 +167,4 @@ def upload_to_s3(file_content: bytes, file_name: str, content_type: str) -> Opti
         return None
     except:
         return None
+

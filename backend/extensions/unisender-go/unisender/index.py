@@ -349,3 +349,4 @@ def handler(event: dict, context) -> dict:
         return handle_test(body)
     else:
         return cors_response(400, {"error": f"Unknown action: {action}"})
+
