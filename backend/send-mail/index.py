@@ -1,12 +1,11 @@
 import json
 import os
-import smtplib
-from email.message import EmailMessage
+import html
+import urllib.request
+import urllib.error
 
-SMTP_HOST = 'mail.hosting.reg.ru'
-SMTP_PORT = 465
-SMTP_USER = '123@svoikit.online'
 MAIL_TO = 'ptizaforest.89@gmail.com'
+API_URL = 'https://go2.unisender.ru/ru/transactional/api/v1/email/send.json'
 
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -16,81 +15,73 @@ CORS_HEADERS = {
 }
 
 
+def reply(status: int, data: dict) -> dict:
+    return {
+        'statusCode': status,
+        'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
+        'body': json.dumps(data, ensure_ascii=False),
+        'isBase64Encoded': False
+    }
+
+
 def handler(event: dict, context) -> dict:
-    '''Отправляет письмо с сайта на почту ptizaforest.89@gmail.com через SMTP Рег.ру'''
+    '''Отправляет заявку с формы сайта на почту ptizaforest.89@gmail.com через Unisender Go'''
     method = event.get('httpMethod', 'GET')
 
     if method == 'OPTIONS':
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': ''}
 
     if method != 'POST':
-        return {
-            'statusCode': 405,
-            'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Method not allowed'}),
-            'isBase64Encoded': False
-        }
+        return reply(405, {'error': 'Method not allowed'})
 
     body = json.loads(event.get('body') or '{}')
-    name = str(body.get('name', '')).strip()
-    contact = str(body.get('contact', '')).strip()
-    message = str(body.get('message', '')).strip()
+    name = str(body.get('name', '')).strip()[:100]
+    contact = str(body.get('contact', '')).strip()[:150]
+    message = str(body.get('message', '')).strip()[:5000]
 
     if not name or not message:
-        return {
-            'statusCode': 400,
-            'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
-            'body': json.dumps({'success': False, 'error': 'Заполните имя и сообщение'}),
-            'isBase64Encoded': False
-        }
+        return reply(400, {'success': False, 'error': 'Заполните имя и сообщение'})
 
-    password = os.environ.get('SMTP_PASSWORD')
-    if not password:
-        return {
-            'statusCode': 500,
-            'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
-            'body': json.dumps({'success': False, 'error': 'SMTP не настроен'}),
-            'isBase64Encoded': False
-        }
+    api_key = os.environ.get('UNISENDER_API_KEY', '')
+    sender = os.environ.get('UNISENDER_SENDER_EMAIL', '')
+    if not api_key or not sender:
+        return reply(500, {'success': False, 'error': 'Отправка почты не настроена'})
 
-    msg = EmailMessage()
-    msg['Subject'] = f'Заявка с сайта от {name}'
-    msg['From'] = SMTP_USER
-    msg['To'] = MAIL_TO
-    if '@' in contact:
-        msg['Reply-To'] = contact
-    msg.set_content(f'Имя: {name}\nКонтакт: {contact}\n\nСообщение:\n{message}')
-
-    import time
-    started = time.time()
-    stage = 'connect'
-    try:
-        try:
-            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=2)
-        except (TimeoutError, OSError) as e:
-            print(f'Port {SMTP_PORT} failed: {e}; trying 587')
-            stage = 'connect587'
-            server = smtplib.SMTP(SMTP_HOST, 587, timeout=2)
-            server.starttls()
-        with server:
-            stage = 'login'
-            server.login(SMTP_USER, password)
-            stage = 'send'
-            server.send_message(msg)
-    except Exception as e:
-        print(f'SMTP error at {stage} after {time.time() - started:.2f}s: {type(e).__name__}: {e}')
-        return {
-            'statusCode': 502,
-            'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
-            'body': json.dumps({'success': False, 'error': 'Не удалось отправить письмо, попробуйте позже', 'stage': stage}, ensure_ascii=False),
-            'isBase64Encoded': False
-        }
-    print(f'SMTP ok in {time.time() - started:.2f}s')
-
-    return {
-        'statusCode': 200,
-        'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
-        'body': json.dumps({'success': True, 'message': 'Письмо отправлено'}),
-        'isBase64Encoded': False
+    body_html = (
+        f'<p><b>Имя:</b> {html.escape(name)}</p>'
+        f'<p><b>Контакт:</b> {html.escape(contact) or "—"}</p>'
+        f'<p><b>Сообщение:</b><br>{html.escape(message).replace(chr(10), "<br>")}</p>'
+    )
+    msg = {
+        'recipients': [{'email': MAIL_TO}],
+        'from_email': sender,
+        'from_name': 'Форма с сайта',
+        'subject': f'Заявка с сайта от {name}',
+        'body': {'html': body_html, 'plaintext': f'Имя: {name}\nКонтакт: {contact}\n\n{message}'},
+        'track_links': 0,
+        'track_read': 0,
     }
+    if '@' in contact:
+        msg['reply_to'] = contact
 
+    req = urllib.request.Request(
+        API_URL,
+        data=json.dumps({'message': msg}).encode('utf-8'),
+        headers={'Content-Type': 'application/json', 'X-API-KEY': api_key},
+        method='POST',
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        print(f'Unisender HTTP {e.code}: {e.read().decode("utf-8", "replace")[:500]}')
+        return reply(502, {'success': False, 'error': 'Не удалось отправить письмо, попробуйте позже'})
+    except Exception as e:
+        print(f'Unisender error: {type(e).__name__}: {e}')
+        return reply(502, {'success': False, 'error': 'Не удалось отправить письмо, попробуйте позже'})
+
+    if result.get('status') != 'success':
+        print(f'Unisender rejected: {result}')
+        return reply(502, {'success': False, 'error': 'Не удалось отправить письмо, попробуйте позже'})
+
+    return reply(200, {'success': True, 'message': 'Письмо отправлено'})
