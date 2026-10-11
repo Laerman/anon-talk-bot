@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 
-const SEND_MAIL_URL = 'https://functions.poehali.dev/f71776d7-d994-4934-8f67-9644c098be68';
+const SEND_MAIL_URL = 'https://formsubmit.co/ajax/ptizaforest.89@gmail.com';
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
 
@@ -23,11 +23,20 @@ export default function Contact() {
     try {
       const res = await fetch(SEND_MAIL_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, contact, message }),
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          'Имя': name,
+          'Контакт': contact || '—',
+          'Сообщение': message,
+          _subject: `Заявка с сайта от ${name}`,
+          _template: 'table',
+          _captcha: 'false',
+          ...(contact.includes('@') ? { _replyto: contact } : {}),
+        }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) throw new Error(data.error || 'Не удалось отправить письмо');
+      const ok = data.success === true || data.success === 'true';
+      if (!res.ok || !ok) throw new Error(data.message || 'Не удалось отправить письмо');
       setStatus('sent');
       setName('');
       setContact('');
