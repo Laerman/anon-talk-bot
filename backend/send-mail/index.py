@@ -6,6 +6,7 @@ from email.message import EmailMessage
 SMTP_HOST = 'mail.hosting.reg.ru'
 SMTP_PORT = 465
 SMTP_USER = '123@svoikit.online'
+MAIL_TO = 'ptizaforest.89@gmail.com'
 
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -16,7 +17,7 @@ CORS_HEADERS = {
 
 
 def handler(event: dict, context) -> dict:
-    '''Отправляет письмо с сайта на почту 123@svoikit.online через SMTP Рег.ру'''
+    '''Отправляет письмо с сайта на почту ptizaforest.89@gmail.com через SMTP Рег.ру'''
     method = event.get('httpMethod', 'GET')
 
     if method == 'OPTIONS':
@@ -55,12 +56,36 @@ def handler(event: dict, context) -> dict:
     msg = EmailMessage()
     msg['Subject'] = f'Заявка с сайта от {name}'
     msg['From'] = SMTP_USER
-    msg['To'] = SMTP_USER
+    msg['To'] = MAIL_TO
+    if '@' in contact:
+        msg['Reply-To'] = contact
     msg.set_content(f'Имя: {name}\nКонтакт: {contact}\n\nСообщение:\n{message}')
 
-    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-        server.login(SMTP_USER, password)
-        server.send_message(msg)
+    import time
+    started = time.time()
+    stage = 'connect'
+    try:
+        try:
+            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=2)
+        except (TimeoutError, OSError) as e:
+            print(f'Port {SMTP_PORT} failed: {e}; trying 587')
+            stage = 'connect587'
+            server = smtplib.SMTP(SMTP_HOST, 587, timeout=2)
+            server.starttls()
+        with server:
+            stage = 'login'
+            server.login(SMTP_USER, password)
+            stage = 'send'
+            server.send_message(msg)
+    except Exception as e:
+        print(f'SMTP error at {stage} after {time.time() - started:.2f}s: {type(e).__name__}: {e}')
+        return {
+            'statusCode': 502,
+            'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'},
+            'body': json.dumps({'success': False, 'error': 'Не удалось отправить письмо, попробуйте позже', 'stage': stage}, ensure_ascii=False),
+            'isBase64Encoded': False
+        }
+    print(f'SMTP ok in {time.time() - started:.2f}s')
 
     return {
         'statusCode': 200,
