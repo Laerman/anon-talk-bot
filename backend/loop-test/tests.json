@@ -1,0 +1,7 @@
+{
+  "tests": [
+    {"name": "CORS", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
+    {"name": "Цикл по умолчанию", "method": "GET", "path": "/", "expectedStatus": 200, "expectedBody": {"ok": true, "iterations": 10, "sum": 45}, "bodyMatcher": "partial"},
+    {"name": "Цикл 1000", "method": "GET", "path": "/?n=1000", "expectedStatus": 200, "expectedBody": {"ok": true, "iterations": 1000, "sum": 499500}, "bodyMatcher": "partial"}
+  ]
+}
