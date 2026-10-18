@@ -218,7 +218,7 @@ export default function AttachmentsList({ attachments, onCleanupComplete }: Atta
                       />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                        <Icon name={mediaInfo.icon as any} size={48} className="text-primary mb-2" />
+                        <Icon name={mediaInfo.icon as string} size={48} className="text-primary mb-2" />
                         <span className="text-sm font-medium text-primary">{mediaInfo.label}</span>
                       </div>
                     )}
@@ -229,7 +229,7 @@ export default function AttachmentsList({ attachments, onCleanupComplete }: Atta
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
                       <div className="flex justify-between items-start">
                         <span className={`text-xs ${genderInfo.color}`}>
-                          <Icon name={genderInfo.icon as any} size={16} />
+                          <Icon name={genderInfo.icon as string} size={16} />
                         </span>
                         <span className="text-xs text-white bg-black/50 px-2 py-1 rounded">
                           CH-{attachment.chat_id}

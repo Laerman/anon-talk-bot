@@ -63,9 +63,9 @@ export default function Telelog() {
     payload: Record<string, unknown>,
     take: () => Promise<void>,
     attempt = 0,
-  ): Promise<any> => {
+  ): Promise<any> => { // eslint-disable-line @typescript-eslint/no-explicit-any
     await take();
-    let r: any;
+    let r: any; // eslint-disable-line @typescript-eslint/no-explicit-any
     try {
       r = await call(payload);
     } catch (e) {
@@ -158,7 +158,7 @@ export default function Telelog() {
         if (bal !== undefined && bal !== null) setBalance(bal);
         addLog(`${tgt.label} (id=${tgt.id}) — групп: ${groups.length}`, 'ok');
         setCheckedUsers((prev) => [...prev, { id: tgt.id, label: tgt.label }]);
-        groups.forEach((g: Record<string, any>) => {
+        groups.forEach((g: Record<string, any>) => { // eslint-disable-line @typescript-eslint/no-explicit-any
           const chat = g.chat || {};
           collected.push({
             userLabel: tgt.label,
