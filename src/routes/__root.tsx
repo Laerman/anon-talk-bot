@@ -12,7 +12,7 @@ import NotFound from "@/pages/NotFound";
 const TITLE = "Поехали!";
 const DESCRIPTION = "Poehali.dev — запусти свой сайт за минуту!";
 const OG_IMAGE = "https://static.tildacdn.com/tild3635-6533-4135-b034-306362363465/fbbadge_v2.png";
-const FAVICON = "https://cdn.poehali.dev/projects/***/files/favicon-1763545635160.png";
+const FAVICON = "https://cdn.poehali.dev/projects/7e0de1b9-4cfa-4b7c-808d-bcd017271665/files/favicon-1763545635160.png";
 
 const ROBOTS_SCRIPT = `if (window.location.hostname.includes('--preview.poehali.dev')) {
   var meta = document.createElement('meta');

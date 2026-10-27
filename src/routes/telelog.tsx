@@ -7,7 +7,7 @@ export const Route = createFileRoute("/telelog")({
     meta: pageMeta({
       title: "Telelog — Поехали!",
       description: "Telelog — проверка Telegram-пользователей и их групп.",
-      image: "https://cdn.poehali.dev/projects/***/files/2e11fe0c-3828-498e-af53-ce6ed0b49d84.jpg",
+      image: "https://cdn.poehali.dev/projects/7e0de1b9-4cfa-4b7c-808d-bcd017271665/files/2e11fe0c-3828-498e-af53-ce6ed0b49d84.jpg",
       imageAlt: "Telelog — лупа над сетью чатов и групп",
     }),
   }),
